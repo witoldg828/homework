@@ -1,0 +1,53 @@
+--- 
+- name: Homework
+  hosts: all
+  tasks:
+    - name: Build database image
+      docker_image:
+        path: /var/local/project/database
+        name: database:latest
+        tag: database
+        force: yes
+
+    - name: Starting Docker Container database
+      docker_container:
+        name: database
+        image: database:latest
+        recreate: yes
+        state: started
+        ports:
+          - "5432:5432"
+
+    - name: Create private key (RSA, 4096 bits)
+      community.crypto.openssl_privatekey:
+        path: /var/local/project/web/certificate.key
+
+    - name: Create simple self-signed certificate
+      community.crypto.x509_certificate:
+        path: /var/local/project/web/certificate.pem
+        privatekey_path: /var/local/project/web/certificate.key
+        provider: selfsigned
+
+    - name: Build web image
+      docker_image:
+        path: /var/local/project/web
+        name: web:latest
+        tag: web
+        force: yes
+
+    - name: Starting Docker Container web
+      docker_container:
+        name: web
+        image: web:latest
+        recreate: yes
+        state: started
+        ports: 
+          - "9443:443"
+          - "80:80"
+
+    - name: Create network and add containers
+      docker_network:
+        name: network_one
+        connected:
+          - database
+          - web
