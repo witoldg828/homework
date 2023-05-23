@@ -4,10 +4,14 @@
   tasks:
     - name: Build database image
       docker_image:
-        path: /var/local/project/database
         name: database:latest
         tag: database
-        force: yes
+        source: build
+        force_source: yes
+        build: 
+          path: database
+          pull: yes
+          
 
     - name: Starting Docker Container database
       docker_container:
@@ -17,23 +21,31 @@
         state: started
         ports:
           - "5432:5432"
+        env:
+          POSTGRES_DB: auradb
+          POSTGRES_USER: aura
+          POSTGRES_PASSWORD: aurapassword
+
 
     - name: Create private key (RSA, 4096 bits)
       community.crypto.openssl_privatekey:
-        path: /var/local/project/web/certificate.key
+        path: ./web/certificate.key
 
     - name: Create simple self-signed certificate
       community.crypto.x509_certificate:
-        path: /var/local/project/web/certificate.pem
-        privatekey_path: /var/local/project/web/certificate.key
+        path: ./web/certificate.pem
+        privatekey_path: ./web/certificate.key
         provider: selfsigned
 
     - name: Build web image
       docker_image:
-        path: /var/local/project/web
         name: web:latest
         tag: web
-        force: yes
+        source: build
+        force_source: yes
+        build:
+          path: web
+          pull: yes
 
     - name: Starting Docker Container web
       docker_container:
